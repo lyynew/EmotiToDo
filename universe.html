@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大道无形 - 太极八卦文字宇宙 (大小可控版)</title>
+    <style>
+        :root {
+            --bg-color: #030305;
+            --panel-bg: rgba(10, 12, 16, 0.5);
+            --panel-border: rgba(212, 175, 55, 0.4);
+            --text-main: #d4af37;
+            --text-glow: 0 0 10px rgba(212, 175, 55, 0.6);
+        }
+        body.theme-ink {
+            --bg-color: #f2f0e6;
+            --panel-bg: rgba(255, 255, 255, 0.7);
+            --panel-border: rgba(0, 0, 0, 0.3);
+            --text-main: #222;
+            --text-glow: 0 0 10px rgba(138, 26, 26, 0.4);
+        }
+
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg-color); font-family: 'STKaiti', 'KaiTi', serif; user-select: none; -webkit-user-select: none; touch-action: none; transition: background 1s ease;}
+        canvas { display: block; width: 100%; height: 100%; outline: none;}
+
+        #ui-toggle {
+            position: absolute; top: 15px; right: 15px; width: 40px; height: 40px;
+            background: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 50%; color: var(--text-main); font-size: 20px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 20; box-shadow: var(--text-glow);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        #hud {
+            position: absolute; top: 70px; right: 20px; width: 300px;
+            background: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 12px; padding: 20px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: var(--text-main); text-shadow: var(--text-glow);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.8);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            z-index: 10; transform-origin: top right;
+        }
+
+        #hud.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
+
+        #hud::before {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 1px solid var(--text-main); border-radius: 14px; opacity: 0.2; pointer-events: none;
+        }
+
+        h1 { margin: 0 0 20px 0; font-size: 22px; text-align: center; font-weight: normal; letter-spacing: 4px; border-bottom: 1px solid var(--panel-border); padding-bottom: 15px;}
+        .row { margin-bottom: 15px; }
+        .row label { display: block; font-size: 13px; margin-bottom: 6px; opacity: 0.8; letter-spacing: 1px;}
+        
+        select, button {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border);
+            color: var(--text-main); padding: 8px 12px; font-family: inherit; font-size: 15px;
+            border-radius: 4px; cursor: pointer; outline: none; transition: 0.3s; letter-spacing: 2px;
+            -webkit-appearance: none;
+        }
+        body.theme-ink select, body.theme-ink button { background: rgba(255,255,255,0.5); }
+        select:hover, button:hover { background: var(--text-main); color: var(--bg-color); box-shadow: var(--text-glow); }
+        
+        /* 滑动条样式 */
+        input[type="range"] {
+            width: 100%; cursor: pointer; accent-color: var(--text-main);
+            background: rgba(0,0,0,0.2); border-radius: 5px; outline: none;
+        }
+
+        #tips {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%;
+            color: var(--text-main); font-size: 15px; letter-spacing: 3px; opacity: 0.6; pointer-events: none;
+            text-align: center; text-shadow: var(--text-glow);
+        }
+        .highlight { color: #ff4500; font-weight: bold; }
+
+        @media (max-width: 768px) {
+            #hud { top: auto; bottom: 20px; right: 5%; width: 90%; padding: 15px; transform-origin: bottom right; }
+            #ui-toggle { top: auto; bottom: 20px; right: 20px; }
+            #tips { top: 15px; bottom: auto; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-toggle" onclick="toggleHUD()">☰</div>
+
+    <div id="hud" class="hidden">
+        <h1>万法归宗 · 演化仪</h1>
+        <div class="row">
+            <label>先天大阵 (阵法形态)</label>
+            <select id="mode">
+                <option value="wuji">无极混沌 (自由星尘)</option>
+                <option value="taiji">太极两仪 (阴阳双鱼)</option>
+                <option value="bagua" selected>周天八卦 (八方八环)</option>
+                <option value="spiral">九宫星涡 (螺旋聚灵)</option>
+            </select>
+        </div>
+        <div class="row">
+            <label>大道真言 (文字法则)</label>
+            <select id="words">
+                <option value="dao">道玄真言 (阴阳五行)</option>
+                <option value="gua">周易卦辞 (乾坤震巽)</option>
+                <option value="poem">千古诗文 (银河落天)</option>
+                <option value="talisman">上古符文 (篆体意象)</option>
+            </select>
+        </div>
+        <div class="row">
+            <label>世界本源 (视觉主题)</label>
+            <select id="theme">
+                <option value="gold">太虚鎏金 (暗夜聚灵)</option>
+                <option value="ink">水墨丹青 (宣纸造化)</option>
+            </select>
+        </div>
+        <div class="row">
+            <label>文字尺度 (万物缩放)</label>
+            <input type="range" id="fontScale" min="0.6" max="2.0" step="0.1" value="1.0">
+        </div>
+        <div class="row">
+            <button onclick="Engine.burst(); toggleHUD(true);">一气化三清 (重置爆发)</button>
+        </div>
+    </div>
+
+    <div id="tips">
+        划破空间尾流 | <span class="highlight">点击</span>震荡 | <span class="highlight">长按</span>事件视界 | <span class="highlight">双击</span>定格时空
+    </div>
+
+    <canvas id="universe"></canvas>
+
+    <script>
+        const hud = document.getElementById('hud');
+        function toggleHUD(forceClose = false) {
+            if (forceClose) hud.classList.add('hidden');
+            else hud.classList.toggle('hidden');
+        }
+
+        const SpriteCache = {
+            cache: {},
+            get(char, color, theme) {
+                const key = char + '_' + color + '_' + theme;
+                if (!this.cache[key]) {
+                    const canvas = document.createElement('canvas');
+                    // 画布放大到150，容纳被放大后的文字发光，避免边缘被切断
+                    const size = 150; 
+                    canvas.width = size;
+                    canvas.height = size;
+                    const sCtx = canvas.getContext('2d', { alpha: true });
+                    
+                    sCtx.font = `${size * 0.5}px STKaiti, KaiTi, serif`;
+                    sCtx.fillStyle = color;
+                    sCtx.textAlign = 'center';
+                    sCtx.textBaseline = 'middle';
+
+                    if (theme === 'gold') {
+                        sCtx.shadowColor = color;
+                        sCtx.shadowBlur = 15;
+                    } else {
+                        sCtx.shadowColor = 'rgba(0,0,0,0.5)';
+                        sCtx.shadowBlur = 5;
+                    }
+                    
+                    sCtx.fillText(char, size / 2, size / 2 + 2); 
+                    this.cache[key] = canvas;
+                }
+                return this.cache[key];
+            }
+        };
+
+        const DICT = {
+            dao: ['道','法','自','然','阴','阳','炁','神','虚','空','金','木','水','火','土','玄','元','黄','宇','宙'],
+            gua: ['乾','坤','震','巽','坎','离','艮','兑','泰','否','咸','恒','损','益','噬','嗑','剥','复'],
+            poem: ['明','月','星','辰','清','泉','石','流','飞','霜','天','地','浩','渺','沧','海','桑','田'],
+            talisman: ['𪧘','𪧙','𪧚','𪧛','𪧜','𪧝','一','丨','丿','丶','乙','〇','卍','卐','㠪','亼']
+        };
+
+        const THEMES = {
+            gold: { bgBase: '#020204', colors: ['#d4af37', '#e5c158', '#aa8c2c', '#ffffff', '#ff6b35'], line: 'rgba(212, 175, 55, 0.15)' },
+            ink: { bgBase: '#f6f5ec', colors: ['#111111', '#333333', '#555555', '#8a1a1a', '#b22222'], line: 'rgba(0, 0, 0, 0.1)' }
+        };
+
+        const canvas = document.getElementById('universe');
+        const ctx = canvas.getContext('2d', { willReadFrequently: false }); 
+        let W, H, CX, CY;
+
+        const RND = (min, max) => Math.random() * (max - min) + min;
+
+        const Engine = {
+            particles: [],
+            ripples: [],
+            count: 0,
+            mode: 'bagua',
+            words: 'dao',
+            theme: 'gold',
+            time: 0,
+            timeScale: 1,
+            scale: 1, 
+            fontScale: 1.0, // 新增：字体缩放全局变量
+            mouse: { x: -1000, y: -1000, isDown: false, vx: 0, vy: 0, lastX: -1000, lastY: -1000 },
+            
+            init() {
+                this.resize();
+                this.count = W < 768 ? 250 : 500;
+                
+                window.addEventListener('resize', () => this.resize());
+                this.bindEvents();
+                this.burst();
+
+                if (W > 768) toggleHUD(); 
+                this.loop();
+            },
+
+            resize() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+                CX = W / 2; CY = H / 2;
+                this.scale = Math.max(0.45, Math.min(W, H) / 900);
+            },
+
+            triggerTimeFreeze() {
+                this.particles.forEach(p => {
+                    p.vx -= (p.x - CX) * 0.015;
+                    p.vy -= (p.y - CY) * 0.015;
+                });
+                
+                this.timeScale = 0;
+                document.getElementById('tips').innerHTML = '<span class="highlight">时空已冻结</span>，万物归寂';
+                setTimeout(() => {
+                    this.timeScale = 1;
+                    document.getElementById('tips').innerHTML = '划破空间尾流 | 点击震荡 | 长按事件视界 | 双击定格';
+                }, 1500);
+            },
+
+            bindEvents() {
+                document.getElementById('mode').addEventListener('change', e => this.mode = e.target.value);
+                document.getElementById('words').addEventListener('change', e => {
+                    this.words = e.target.value;
+                    this.particles.forEach(p => p.renewChar());
+                });
+                document.getElementById('theme').addEventListener('change', e => {
+                    this.theme = e.target.value;
+                    document.body.className = `theme-${this.theme}`;
+                    this.particles.forEach(p => p.renewColor());
+                });
+                // 监听字体缩放滑动条
+                document.getElementById('fontScale').addEventListener('input', e => {
+                    this.fontScale = parseFloat(e.target.value);
+                });
+
+                const updateMouse = (x, y) => {
+                    this.mouse.lastX = this.mouse.x;
+                    this.mouse.lastY = this.mouse.y;
+                    this.mouse.x = x; 
+                    this.mouse.y = y;
+                    this.mouse.vx = this.mouse.x - this.mouse.lastX;
+                    this.mouse.vy = this.mouse.y - this.mouse.lastY;
+                };
+                
+                window.addEventListener('mousemove', e => updateMouse(e.clientX, e.clientY));
+                window.addEventListener('mousedown', () => this.mouse.isDown = true);
+                window.addEventListener('mouseup', () => this.mouse.isDown = false);
+                canvas.addEventListener('click', e => this.ripples.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: 300 * this.scale, life: 1 }));
+                canvas.addEventListener('dblclick', () => this.triggerTimeFreeze());
+
+                let lastTapTime = 0;
+                canvas.addEventListener('touchstart', (e) => {
+                    if (!hud.classList.contains('hidden')) toggleHUD(true);
+                    const touch = e.touches[0];
+                    updateMouse(touch.clientX, touch.clientY);
+                    this.mouse.isDown = true;
+                    
+                    let currentTime = new Date().getTime();
+                    let tapLength = currentTime - lastTapTime;
+                    
+                    if (tapLength < 300 && tapLength > 0) {
+                        this.triggerTimeFreeze(); 
+                    } else {
+                        this.ripples.push({ x: touch.clientX, y: touch.clientY, radius: 0, maxRadius: 300 * this.scale, life: 1 });
+                    }
+                    lastTapTime = currentTime;
+                }, {passive: false});
+
+                canvas.addEventListener('touchmove', (e) => {
+                    const touch = e.touches[0];
+                    updateMouse(touch.clientX, touch.clientY);
+                }, {passive: false});
+
+                window.addEventListener('touchend', () => this.mouse.isDown = false);
+            },
+
+            burst() {
+                this.particles = [];
+                for(let i=0; i<this.count; i++) {
+                    let angle = RND(0, Math.PI*2);
+                    let dist = RND(0, 50 * this.scale);
+                    let p = new Particle(i, CX + Math.cos(angle)*dist, CY + Math.sin(angle)*dist);
+                    p.vx = Math.cos(angle) * RND(2, 6);
+                    p.vy = Math.sin(angle) * RND(2, 6);
+                    this.particles.push(p);
+                }
+            },
+
+            drawBackground() {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = this.theme === 'gold' ? 'rgba(2, 2, 4, 0.3)' : 'rgba(246, 245, 236, 0.3)';
+                ctx.fillRect(0, 0, W, H);
+
+                ctx.strokeStyle = THEMES[this.theme].line;
+                ctx.lineWidth = 1 * this.scale;
+                
+                ctx.save();
+                ctx.translate(CX, CY);
+                ctx.rotate(this.time * 0.5);
+                
+                let s = this.scale;
+                if (this.mode === 'taiji') {
+                    ctx.beginPath(); ctx.arc(0, 0, 200*s, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, -100*s, 50*s, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 100*s, 50*s, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, -200*s); ctx.bezierCurveTo(150*s, -100*s, -150*s, 100*s, 0, 200*s); ctx.stroke();
+                } else if (this.mode === 'bagua') {
+                    for(let i=1; i<=8; i++) {
+                        ctx.beginPath(); ctx.arc(0, 0, (i * 45 + 20)*s, 0, Math.PI*2); ctx.stroke();
+                    }
+                    for(let i=0; i<8; i++) {
+                        ctx.rotate(Math.PI / 4);
+                        ctx.beginPath(); ctx.moveTo(60*s, 0); ctx.lineTo(380*s, 0); ctx.stroke();
+                    }
+                } else if (this.mode === 'spiral') {
+                    for(let i=0; i<6; i++) {
+                        ctx.beginPath();
+                        for(let a=0; a<Math.PI*4; a+=0.1) {
+                            let r = a * 30 * s;
+                            let x = Math.cos(a + i*(Math.PI/3)) * r;
+                            let y = Math.sin(a + i*(Math.PI/3)) * r;
+                            a === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+                        }
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            },
+
+            updateRipples() {
+                for(let i=this.ripples.length-1; i>=0; i--) {
+                    let r = this.ripples[i];
+                    r.radius += 20 * this.timeScale * this.scale;
+                    r.life -= 0.015 * this.timeScale;
+                    
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2);
+                    ctx.strokeStyle = `rgba(${this.theme==='gold'?'212,175,55':'138,26,26'}, ${Math.max(0, r.life)})`;
+                    ctx.lineWidth = 3 * this.scale;
+                    ctx.stroke();
+
+                    let waveWidth = 40 * this.scale;
+                    let minR_sq = Math.pow(r.radius - waveWidth, 2);
+                    let maxR_sq = Math.pow(r.radius + waveWidth, 2);
+
+                    this.particles.forEach(p => {
+                        let dx = p.x - r.x, dy = p.y - r.y;
+                        let distSq = dx*dx + dy*dy;
+                        
+                        if (distSq > minR_sq && distSq < maxR_sq) {
+                            let dist = Math.sqrt(distSq); 
+                            let wavePhase = (dist - r.radius) / waveWidth * Math.PI;
+                            let force = Math.cos(wavePhase) * r.life * 8; 
+                            p.vx += (dx/dist) * force;
+                            p.vy += (dy/dist) * force;
+                        }
+                    });
+
+                    if(r.life <= 0) this.ripples.splice(i, 1);
+                }
+            },
+
+            loop() {
+                this.time += 0.005 * this.timeScale;
+                this.drawBackground();
+                this.updateRipples();
+
+                if (this.theme === 'gold') {
+                    ctx.globalCompositeOperation = 'screen';
+                } else {
+                    ctx.globalCompositeOperation = 'multiply';
+                }
+
+                this.particles.forEach(p => {
+                    p.calculateTarget(this.time);
+                    p.update(this.timeScale);
+                    p.draw(ctx);
+                });
+
+                this.mouse.vx *= 0.5;
+                this.mouse.vy *= 0.5;
+
+                requestAnimationFrame(() => this.loop());
+            }
+        };
+
+        // ==========================================
+        // 粒子系统
+        // ==========================================
+        class Particle {
+            constructor(index, x, y) {
+                this.index = index;
+                this.x = x; this.y = y;
+                this.vx = 0; this.vy = 0;
+                this.targetX = x; this.targetY = y;
+                
+                this.size = RND(22, 42) * Math.max(0.6, Math.min(Engine.scale, 1.2));
+                this.mass = this.size / 10; 
+                this.offset = RND(0, 100);
+
+                this.scatterX = RND(-25, 25);
+                this.scatterY = RND(-25, 25);
+                
+                this.renewChar();
+                this.renewColor();
+            }
+
+            renewChar() {
+                let pool = DICT[Engine.words];
+                this.char = pool[Math.floor(Math.random() * pool.length)];
+                this.updateSprite();
+            }
+
+            renewColor() {
+                let colors = THEMES[Engine.theme].colors;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.updateSprite();
+            }
+
+            updateSprite() {
+                if(this.char && this.color) {
+                    this.sprite = SpriteCache.get(this.char, this.color, Engine.theme);
+                }
+            }
+
+            calculateTarget(time) {
+                let s = Engine.scale;
+                let baseX, baseY;
+
+                if (Engine.mode === 'wuji') {
+                    this.targetX = this.x + RND(-20, 20);
+                    this.targetY = this.y + RND(-20, 20);
+                    return;
+                }
+
+                let radius, angle;
+                if (Engine.mode === 'bagua') {
+                    let rings = 8;
+                    let ringIndex = (this.index % rings) + 1; 
+                    let slice = Math.floor(this.index / rings) % 8; 
+                    
+                    radius = (ringIndex * 45 + 20) * s;
+                    let dir = ringIndex % 2 === 0 ? 1 : -1;
+                    angle = (slice * Math.PI / 4) + time * dir * (1.5 / ringIndex) + this.scatterX * 0.01;
+
+                    baseX = CX + Math.cos(angle) * radius;
+                    baseY = CY + Math.sin(angle) * radius;
+
+                } else if (Engine.mode === 'taiji') {
+                    let isYin = this.index % 2 === 0;
+                    let eyeX = CX + Math.cos(time + (isYin ? 0 : Math.PI)) * 100 * s;
+                    let eyeY = CY + Math.sin(time + (isYin ? 0 : Math.PI)) * 100 * s;
+
+                    radius = Math.pow(this.index % 25, 1.2) * 5 * s; 
+                    angle = time * 2.5 * (isYin ? 1 : -1) + this.offset;
+
+                    baseX = eyeX + Math.cos(angle) * radius;
+                    baseY = eyeY + Math.sin(angle) * radius;
+
+                } else if (Engine.mode === 'spiral') {
+                    let arm = this.index % 9; 
+                    radius = Math.pow((this.index/9), 1.15) * 3.5 * s;
+                    angle = time * -1.5 + radius * 0.01 + (arm * (Math.PI * 2 / 9));
+
+                    baseX = CX + Math.cos(angle) * radius;
+                    baseY = CY + Math.sin(angle) * radius;
+                }
+
+                this.targetX = baseX + this.scatterX * s;
+                this.targetY = baseY + this.scatterY * s;
+            }
+
+            update(timeScale) {
+                if(timeScale === 0) return; 
+
+                if (Engine.mode !== 'wuji') {
+                    let forceX = (this.targetX - this.x) * 0.012 / this.mass;
+                    let forceY = (this.targetY - this.y) * 0.012 / this.mass;
+                    this.vx += forceX;
+                    this.vy += forceY;
+                    this.vx *= 0.85; 
+                    this.vy *= 0.85;
+                } else {
+                    this.vx *= 0.95; this.vy *= 0.95;
+                    this.vx += Math.sin(Engine.time + this.offset) * 0.04;
+                    this.vy += Math.cos(Engine.time + this.offset) * 0.04;
+                }
+
+                let mdx = this.x - Engine.mouse.x;
+                let mdy = this.y - Engine.mouse.y;
+                let distSq = mdx*mdx + mdy*mdy;
+                let effectRadius = 250 * Engine.scale;
+                let effectRadiusSq = effectRadius * effectRadius;
+
+                if (distSq < effectRadiusSq) { 
+                    let dist = Math.sqrt(distSq); 
+                    let angle = Math.atan2(mdy, mdx);
+                    
+                    if (Engine.mouse.isDown) {
+                        let eventHorizon = 15 * Engine.scale; 
+                        if (dist < eventHorizon) {
+                            let slingForce = 35;
+                            this.vx = (mdx/dist) * slingForce;
+                            this.vy = (mdy/dist) * slingForce;
+                        } else {
+                            let force = (effectRadius - dist) / 10;
+                            this.vx -= Math.cos(angle) * force * 0.15;
+                            this.vy -= Math.sin(angle) * force * 0.15;
+                            
+                            let lorentzCurl = force * (20 / dist); 
+                            this.vx -= Math.sin(angle) * lorentzCurl;
+                            this.vy += Math.cos(angle) * lorentzCurl;
+                        }
+                    } else {
+                        let mouseSpeedSq = Engine.mouse.vx**2 + Engine.mouse.vy**2;
+                        if (mouseSpeedSq > 4) {
+                            let dot = mdx * Engine.mouse.vx + mdy * Engine.mouse.vy;
+                            let cross = mdx * Engine.mouse.vy - mdy * Engine.mouse.vx;
+                            
+                            if (dot < 0) { 
+                                let vortexForce = (effectRadius - dist) / effectRadius * 0.05;
+                                let curlSign = cross > 0 ? 1 : -1;
+                                this.vx += mdy * vortexForce * curlSign;
+                                this.vy -= mdx * vortexForce * curlSign;
+                                this.vx += Engine.mouse.vx * 0.03;
+                                this.vy += Engine.mouse.vy * 0.03;
+                            } else { 
+                                let pushForce = (effectRadius - dist) / effectRadius * 0.3;
+                                this.vx += (mdx/dist) * pushForce * Math.sqrt(mouseSpeedSq);
+                                this.vy += (mdy/dist) * pushForce * Math.sqrt(mouseSpeedSq);
+                            }
+                        } else {
+                            let force = (effectRadius - dist) / effectRadius;
+                            this.vx += Math.cos(angle) * force * 1.0;
+                            this.vy += Math.sin(angle) * force * 1.0;
+                        }
+                    }
+                }
+
+                let speedSq = this.vx*this.vx + this.vy*this.vy;
+                let maxSpeed = Engine.mouse.isDown ? 25 : 12; 
+                let maxSpeedSq = maxSpeed * maxSpeed;
+
+                if (speedSq > maxSpeedSq) {
+                    let speed = Math.sqrt(speedSq);
+                    this.vx = (this.vx/speed)*maxSpeed;
+                    this.vy = (this.vy/speed)*maxSpeed;
+                }
+
+                this.x += this.vx * timeScale;
+                this.y += this.vy * timeScale;
+
+                if(Engine.mode === 'wuji') {
+                    if(this.x < -20) this.x = W+20;
+                    if(this.x > W+20) this.x = -20;
+                    if(this.y < -20) this.y = H+20;
+                    if(this.y > H+20) this.y = -20;
+                }
+            }
+
+            draw(ctx) {
+                if(this.x < -100 || this.x > W+100 || this.y < -100 || this.y > H+100) return;
+
+                let speed = Math.abs(this.vx) + Math.abs(this.vy);
+                let alpha = 0.3 + (Math.sin(Engine.time * 2 + this.offset) * 0.2) + Math.min(speed*0.05, 0.5);
+                
+                // 【应用缩放】：结合基础大小与用户选择的 Engine.fontScale
+                let renderSize = this.size * Engine.fontScale;
+                if(Engine.mode === 'taiji' || Engine.mode === 'spiral') {
+                    let dX = this.x - CX;
+                    let dY = this.y - CY;
+                    let d = Math.sqrt(dX*dX + dY*dY);
+                    renderSize = this.size * Engine.fontScale * (1 + 100*Engine.scale/(d+50));
+                    alpha += 200*Engine.scale/(d+100);
+                }
+
+                ctx.globalAlpha = Math.max(0.1, Math.min(1, alpha));
+                // 【边界防护】：防止字体放大后超过贴图最大分辨率(150)导致边缘裁切
+                let finalSize = Math.min(renderSize, 150); 
+
+                if (this.sprite) {
+                    ctx.drawImage(this.sprite, this.x - finalSize / 2, this.y - finalSize / 2, finalSize, finalSize);
+                }
+            }
+        }
+
+        window.onload = () => Engine.init();
+
+    </script>
+</body>
+</html>
